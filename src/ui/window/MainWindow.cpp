@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QWindow>
 
+#include "ui/dialogs/AboutDialog.h"
 #include "ui/window/decoration/TitleBar.h"
 #include "ui/window/decoration/WindowResizeHandle.h"
 
@@ -96,6 +97,10 @@ void MainWindow::connectTitleBarSignals()
     QObject::connect(m_titleBar, &TitleBar::systemMoveRequested, this, [this]() {
         if (auto *handle = windowHandle())
             handle->startSystemMove();
+    });
+    QObject::connect(m_titleBar, &TitleBar::aboutRequested, this, [this]() {
+        AboutDialog dialog(this);
+        dialog.exec();
     });
 }
 

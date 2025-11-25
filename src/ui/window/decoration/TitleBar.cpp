@@ -1,14 +1,15 @@
 #include "ui/window/decoration/TitleBar.h"
 
+#include <QAction>
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMouseEvent>
 #include <QPixmap>
 #include <QSizePolicy>
-#include <QStringList>
 #include <QToolButton>
 
 namespace {
@@ -80,13 +81,14 @@ QToolButton *TitleBar::createButton(const QString &iconPath,
 }
 
 void TitleBar::createMenus() {
-  const QStringList menuNames = {
-      tr("File"), tr("Edit"), tr("View"), tr("Settings"), tr("Help"),
-  };
+  m_menuBar->addMenu(tr("File"));
+  m_menuBar->addMenu(tr("Edit"));
+  m_menuBar->addMenu(tr("View"));
+  m_menuBar->addMenu(tr("Settings"));
 
-  for (const auto &menuName : menuNames) {
-    m_menuBar->addMenu(menuName);
-  }
+  auto *helpMenu = m_menuBar->addMenu(tr("Help"));
+  auto *aboutAction = helpMenu->addAction(tr("About Kafka Viewer..."));
+  connect(aboutAction, &QAction::triggered, this, &TitleBar::aboutRequested);
 }
 
 void TitleBar::setMaximized(bool maximized) {

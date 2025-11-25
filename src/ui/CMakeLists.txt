@@ -3,3 +3,4 @@ target_include_directories(kafka-viewer PRIVATE
 )
 
 add_subdirectory(window)
+add_subdirectory(dialogs)

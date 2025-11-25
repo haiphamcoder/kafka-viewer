@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class QLabel;
+class QMenu;
 class QMenuBar;
 class QMouseEvent;
 class QToolButton;
@@ -27,6 +28,7 @@ signals:
     void restoreRequested();
     void closeRequested();
     void systemMoveRequested();
+    void aboutRequested();
 
 private:
     void setupUi();
