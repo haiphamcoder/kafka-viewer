@@ -3,16 +3,6 @@
   "version-string": "0.1.0",
   "dependencies": [
     "qt5-base",
-    "qt5-svg",
-    "qt5-charts",
-    "librdkafka",
-    "nlohmann-json",
-    "protobuf",
-    "openssl",
-    "zstd",
-    "spdlog"
-  ],
-  "overrides": [
-    { "name": "librdkafka", "version": "2.5.3" }
+    "qt5-svg"
   ]
 }

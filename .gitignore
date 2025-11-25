@@ -15,6 +15,9 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 
+# Clangd
+.clangd
+
 # Qt
 *.pro.user
 *.pro.user.*
