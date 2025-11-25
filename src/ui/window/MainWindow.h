@@ -2,7 +2,8 @@
 
 #include <QMainWindow>
 
-class QLabel;
+class TitleBar;
+
 
 class MainWindow final : public QMainWindow {
   Q_OBJECT
@@ -13,5 +14,5 @@ public:
 private:
   void setupUi();
 
-  QLabel *m_titleLabel = nullptr;
+  TitleBar *m_titleBar = nullptr;
 };
