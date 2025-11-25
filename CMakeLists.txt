@@ -21,5 +21,3 @@ include(CompilerOptions)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Svg)
 
 add_subdirectory(src)
-
-install(TARGETS kafka-viewer DESTINATION bin)

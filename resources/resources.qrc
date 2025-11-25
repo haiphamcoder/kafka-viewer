@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="../assets">
+        <file>icons/titlebar/btn_minimize.svg</file>
+        <file>icons/titlebar/btn_maximize.svg</file>
+        <file>icons/titlebar/btn_restore.svg</file>
+        <file>icons/titlebar/btn_close.svg</file>
+    </qresource>
+</RCC>
