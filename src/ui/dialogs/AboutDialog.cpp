@@ -1,6 +1,7 @@
 #include "ui/dialogs/AboutDialog.h"
 
-#include <QDialogButtonBox>
+#include "ui/widgets/FlatButton.h"
+
 #include <QLabel>
 #include <QVBoxLayout>
 
@@ -27,12 +28,13 @@ AboutDialog::AboutDialog(QWidget *parent)
     auto *version = new QLabel(tr("Version 0.1.0"), this);
     version->setAlignment(Qt::AlignCenter);
 
-    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Close, this);
-    connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    auto *closeButton = new FlatButton(tr("Close"), this);
+    closeButton->setFixedWidth(100);
+    connect(closeButton, &QPushButton::clicked, this, &QDialog::accept);
 
     layout->addWidget(title);
     layout->addWidget(description);
     layout->addWidget(version);
     layout->addStretch();
-    layout->addWidget(buttonBox);
+    layout->addWidget(closeButton, 0, Qt::AlignCenter);
 }

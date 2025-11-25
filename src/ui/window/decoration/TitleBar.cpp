@@ -87,7 +87,7 @@ void TitleBar::createMenus() {
   m_menuBar->addMenu(tr("Settings"));
 
   auto *helpMenu = m_menuBar->addMenu(tr("Help"));
-  auto *aboutAction = helpMenu->addAction(tr("About Kafka Viewer..."));
+  auto *aboutAction = helpMenu->addAction(tr("About"));
   connect(aboutAction, &QAction::triggered, this, &TitleBar::aboutRequested);
 }
 
