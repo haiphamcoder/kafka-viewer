@@ -1,14 +1,20 @@
 #include "ui/window/decoration/TitleBar.h"
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMenuBar>
+#include <QMouseEvent>
+#include <QPixmap>
 #include <QSizePolicy>
+#include <QStringList>
 #include <QToolButton>
 
 namespace
 {
 constexpr auto kIconPrefix = ":/icons/titlebar/";
+constexpr auto kLogoIcon = ":/icons/titlebar/logo.svg";
 }
 
 TitleBar::TitleBar(QWidget *parent)
@@ -25,8 +31,18 @@ void TitleBar::setupUi()
     layout->setContentsMargins(8, 0, 8, 0);
     layout->setSpacing(6);
 
-    m_titleLabel = new QLabel(tr("Kafka Viewer"), this);
-    m_titleLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    m_logoLabel = new QLabel(this);
+    m_logoLabel->setObjectName(QStringLiteral("TitleBarLogo"));
+    m_logoLabel->setAlignment(Qt::AlignCenter);
+    m_logoLabel->setFixedSize(24, 24);
+    m_logoLabel->setPixmap(QIcon(QString::fromLatin1(kLogoIcon)).pixmap(24, 24));
+
+    m_menuBar = new QMenuBar(this);
+    m_menuBar->setObjectName(QStringLiteral("TitleBarMenu"));
+    m_menuBar->setNativeMenuBar(false);
+    m_menuBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_menuBar->installEventFilter(this);
+    createMenus();
 
     m_minimizeButton = createButton(QStringLiteral("btn_minimize.svg"), tr("Minimize"));
     connect(m_minimizeButton, &QToolButton::clicked, this, &TitleBar::minimizeRequested);
@@ -43,7 +59,10 @@ void TitleBar::setupUi()
     m_closeButton = createButton(QStringLiteral("btn_close.svg"), tr("Close"));
     connect(m_closeButton, &QToolButton::clicked, this, &TitleBar::closeRequested);
 
-    layout->addWidget(m_titleLabel, /*stretch=*/1);
+    layout->addWidget(m_logoLabel);
+    layout->addWidget(m_menuBar, /*stretch=*/1);
+    layout->setAlignment(m_menuBar, Qt::AlignVCenter);
+    layout->addStretch();
     layout->addWidget(m_minimizeButton);
     layout->addWidget(m_maximizeButton);
     layout->addWidget(m_closeButton);
@@ -59,10 +78,18 @@ QToolButton *TitleBar::createButton(const QString &iconPath, const QString &tool
     return button;
 }
 
-void TitleBar::setTitle(const QString &title)
+void TitleBar::createMenus()
 {
-    if (m_titleLabel) {
-        m_titleLabel->setText(title);
+    const QStringList menuNames = {
+        tr("File"),
+        tr("Edit"),
+        tr("View"),
+        tr("Settings"),
+        tr("Help"),
+    };
+
+    for (const auto &menuName : menuNames) {
+        m_menuBar->addMenu(menuName);
     }
 }
 
@@ -85,4 +112,40 @@ void TitleBar::updateMaximizeButton()
     m_maximizeButton->setIcon(
         QIcon(QString::fromLatin1("%1%2").arg(QLatin1String(kIconPrefix), iconName)));
     m_maximizeButton->setToolTip(m_isMaximized ? tr("Restore") : tr("Maximize"));
+}
+
+bool TitleBar::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_menuBar && event->type() == QEvent::MouseButtonPress) {
+        auto *mouseEvent = static_cast<QMouseEvent *>(event);
+        if (mouseEvent->button() == Qt::LeftButton && !m_menuBar->actionAt(mouseEvent->pos())) {
+            emit systemMoveRequested();
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+void TitleBar::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        emit systemMoveRequested();
+        event->accept();
+        return;
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void TitleBar::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (m_isMaximized) {
+            emit restoreRequested();
+        } else {
+            emit maximizeRequested();
+        }
+        event->accept();
+        return;
+    }
+    QWidget::mouseDoubleClickEvent(event);
 }

@@ -4,5 +4,6 @@
         <file alias="btn_maximize.svg">../assets/icons/titlebar/btn_maximize.svg</file>
         <file alias="btn_restore.svg">../assets/icons/titlebar/btn_restore.svg</file>
         <file alias="btn_close.svg">../assets/icons/titlebar/btn_close.svg</file>
+        <file alias="logo.svg">../assets/icons/logo.svg</file>
     </qresource>
 </RCC>
