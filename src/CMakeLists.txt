@@ -9,5 +9,6 @@ target_include_directories(kafka-viewer PRIVATE
 )
 
 add_subdirectory(app)
+add_subdirectory(ui)
 
 target_link_libraries(kafka-viewer PRIVATE Qt5::Widgets Qt5::Svg)
