@@ -4,6 +4,7 @@
 #include <QString>
 #include <QWidget>
 
+class QAction;
 class QLabel;
 class QMenu;
 class QMenuBar;
@@ -21,6 +22,10 @@ public:
     explicit TitleBar(QWidget *parent = nullptr);
 
     void setMaximized(bool maximized);
+    void setUseSystemFrame(bool useSystemFrame);
+    void restoreMenuBar();
+    void setTheme(const QString &themeName);
+    QMenuBar *menuBar() const { return m_menuBar; }
 
 signals:
     void minimizeRequested();
@@ -29,6 +34,8 @@ signals:
     void closeRequested();
     void systemMoveRequested();
     void aboutRequested();
+    void useSystemFrameRequested(bool useSystemFrame);
+    void themeChanged(const QString &themeName);
 
 private:
     void setupUi();
@@ -44,5 +51,8 @@ private:
     QToolButton *m_minimizeButton = nullptr;
     QToolButton *m_maximizeButton = nullptr;
     QToolButton *m_closeButton = nullptr;
+    QAction *m_useSystemFrameAction = nullptr;
+    QAction *m_lightThemeAction = nullptr;
+    QAction *m_darkThemeAction = nullptr;
     bool m_isMaximized = false;
 };

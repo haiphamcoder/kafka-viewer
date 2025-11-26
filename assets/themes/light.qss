@@ -1,0 +1,82 @@
+/* -------- GLOBAL -------- */
+QWidget {
+    background-color: #F5F6FA;         /* bg-body */
+    color: #1B1F27;                    /* text-primary */
+    font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
+    font-size: 14px;
+}
+
+QMainWindow {
+    background-color: #EDF0F7;
+}
+
+QLabel {
+    color: #1F2430;                    /* gần text-primary */
+}
+
+#content-area {
+    background-color: #FFFFFF;         /* bg-surface */
+    border: 1px solid #D9DDE7;
+    border-radius: 12px;
+}
+
+#title-bar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E2E6F0;
+    color: #1B1F27;
+}
+
+#title-bar QPushButton {
+    color: #1B1F27;
+}
+
+#title-bar QPushButton:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+#title-bar-close:hover {
+    background-color: #DC2626;
+    color: #FFFFFF;
+}
+
+/* Card / GroupBox */
+QFrame, QGroupBox {
+    border: 1px solid #D9DDE7;         /* border-subtle */
+    border-radius: 6px;
+    background-color: #FFFFFF;         /* bg-surface */
+}
+
+/* Input */
+QLineEdit, QPlainTextEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background-color: #FFFFFF;         /* bg-surface */
+    color: #1B1F27;                    /* text-primary */
+    border: 1px solid #D9DDE7;         /* border-subtle */
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+QLineEdit:focus,
+QPlainTextEdit:focus,
+QTextEdit:focus,
+QSpinBox:focus,
+QDoubleSpinBox:focus,
+QComboBox:focus {
+    border: 1px solid #2563EB;         /* primary-border */
+}
+
+/* FlatButton */
+FlatButton {
+    background-color: #2563EB;         /* primary */
+    color: #FFFFFF;                    /* text-on-primary */
+    border-radius: 6px;
+    padding: 6px 16px;
+    border: none;
+}
+
+FlatButton:hover {
+    background-color: #1D4ED8;         /* primary-hover */
+}
+
+FlatButton:pressed {
+    background-color: #1E40AF;         /* primary-active */
+}

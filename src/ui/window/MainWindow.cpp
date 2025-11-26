@@ -1,10 +1,13 @@
 #include "ui/window/MainWindow.h"
 
+#include <QApplication>
 #include <QEvent>
 #include <QGridLayout>
+#include <QMenuBar>
 #include <QVBoxLayout>
 #include <QWindow>
 
+#include "app/Application.h"
 #include "ui/dialogs/AboutDialog.h"
 #include "ui/window/decoration/TitleBar.h"
 #include "ui/window/decoration/WindowResizeHandle.h"
@@ -102,6 +105,13 @@ void MainWindow::connectTitleBarSignals()
         AboutDialog dialog(this);
         dialog.exec();
     });
+    QObject::connect(m_titleBar, &TitleBar::useSystemFrameRequested, this,
+                    &MainWindow::setUseSystemFrame);
+    QObject::connect(m_titleBar, &TitleBar::themeChanged, this, [](const QString &themeName) {
+        if (auto *app = qobject_cast<Application *>(QApplication::instance())) {
+            app->onThemeChanged(themeName);
+        }
+    });
 }
 
 void MainWindow::toggleMaximizeRestore()
@@ -139,4 +149,51 @@ void MainWindow::changeEvent(QEvent *event)
         updateWindowUiState();
 
     QMainWindow::changeEvent(event);
+}
+
+void MainWindow::setUseSystemFrame(bool useSystemFrame)
+{
+    if (m_useSystemFrame == useSystemFrame)
+        return;
+
+    m_useSystemFrame = useSystemFrame;
+
+    if (useSystemFrame) {
+        // Switch to system window frame
+        setWindowFlag(Qt::FramelessWindowHint, false);
+        if (m_titleBar) {
+            // Hide logo and control buttons
+            m_titleBar->setUseSystemFrame(true);
+            // Set menubar as the window's menu bar (it will appear in system title bar)
+            if (m_titleBar->menuBar()) {
+                setMenuBar(m_titleBar->menuBar());
+            }
+            // Hide the TitleBar widget itself (menubar is now in system frame)
+            m_titleBar->setVisible(false);
+        }
+        for (auto *handle : std::as_const(m_resizeHandles)) {
+            if (handle)
+                handle->setVisible(false);
+        }
+    } else {
+        // Switch to custom frameless window
+        setWindowFlag(Qt::FramelessWindowHint, true);
+        // Remove menubar from window (restore it to TitleBar)
+        if (m_titleBar && m_titleBar->menuBar()) {
+            setMenuBar(nullptr);
+            // Restore menubar parent to TitleBar
+            m_titleBar->menuBar()->setParent(m_titleBar);
+            // Restore menubar to TitleBar's layout
+            m_titleBar->restoreMenuBar();
+        }
+        if (m_titleBar) {
+            // Show TitleBar again
+            m_titleBar->setVisible(true);
+            // Show logo and control buttons again
+            m_titleBar->setUseSystemFrame(false);
+        }
+        updateWindowUiState();
+    }
+
+    show(); // Required to apply window flag changes
 }

@@ -27,7 +27,9 @@ private:
   void updateWindowUiState();
   void toggleMaximizeRestore();
   void restoreWindow();
+  void setUseSystemFrame(bool useSystemFrame);
 
   TitleBar *m_titleBar = nullptr;
   QVector<WindowResizeHandle *> m_resizeHandles;
+  bool m_useSystemFrame = false;
 };

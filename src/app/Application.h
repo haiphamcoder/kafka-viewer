@@ -20,6 +20,16 @@ public:
    */
   int run();
 
+  /**
+   * @brief Loads and applies a theme.
+   * @param themeName Theme name: "light" or "dark"
+   */
+  void loadTheme(const QString &themeName);
+
+public slots:
+  void onThemeChanged(const QString &themeName);
+
 private:
   std::unique_ptr<MainWindow> m_mainWindow;
+  QString m_currentTheme;
 };
