@@ -1,6 +1,7 @@
 #include "ui/window/MainWindow.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QEvent>
 #include <QGridLayout>
 #include <QMenuBar>
@@ -43,19 +44,19 @@ void MainWindow::setupUi()
 
     setupResizeHandles(root, grid);
 
-    auto *contentContainer = new QWidget(root);
-    auto *contentLayout = new QVBoxLayout(contentContainer);
+    m_contentContainer = new QWidget(root);
+    auto *contentLayout = new QVBoxLayout(m_contentContainer);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
 
-    m_titleBar = new TitleBar(contentContainer);
+    m_titleBar = new TitleBar(m_contentContainer);
     contentLayout->addWidget(m_titleBar);
 
-    auto *content = new QWidget(contentContainer);
+    auto *content = new QWidget(m_contentContainer);
     content->setObjectName(QStringLiteral("MainContent"));
     contentLayout->addWidget(content, /*stretch=*/1);
 
-    grid->addWidget(contentContainer, 1, 1);
+    grid->addWidget(m_contentContainer, 1, 1);
 
     setCentralWidget(root);
 
@@ -158,34 +159,103 @@ void MainWindow::setUseSystemFrame(bool useSystemFrame)
 
     m_useSystemFrame = useSystemFrame;
 
+    // Move menu bar between title bar and content container based on frame mode
+    auto *contentLayout = qobject_cast<QVBoxLayout *>(m_contentContainer->layout());
+    QMenuBar *menuBar = nullptr;
+    
+    if (useSystemFrame) {
+        // System frame: get menubar from TitleBar before removing it
+        if (m_titleBar) {
+            menuBar = m_titleBar->menuBar();
+            if (menuBar) {
+                // Remove from TitleBar first
+                m_titleBar->setMenuBar(nullptr);
+                // Add to content layout between titleBar and content
+                if (contentLayout && m_contentContainer) {
+                    menuBar->setParent(m_contentContainer);
+                    int contentIndex = contentLayout->indexOf(m_titleBar);
+                    if (contentIndex >= 0) {
+                        contentLayout->insertWidget(contentIndex + 1, menuBar);
+                    } else {
+                        contentLayout->insertWidget(0, menuBar);
+                    }
+                }
+            }
+        }
+    } else {
+        // Custom frame: get menubar from contentLayout
+        if (contentLayout && m_contentContainer) {
+            // Find menubar in contentLayout
+            for (int i = 0; i < contentLayout->count(); ++i) {
+                auto *item = contentLayout->itemAt(i);
+                if (item) {
+                    if (auto *widget = item->widget()) {
+                        if (qobject_cast<QMenuBar *>(widget)) {
+                            menuBar = qobject_cast<QMenuBar *>(widget);
+                            qDebug() << "Found menubar in contentLayout at index" << i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // If not found in contentLayout, try to get from TitleBar (fallback)
+        if (!menuBar && m_titleBar) {
+            menuBar = m_titleBar->menuBar();
+            qDebug() << "Menubar from TitleBar:" << menuBar;
+        }
+        
+        if (menuBar) {
+            qDebug() << "Switching to custom frame - restoring menubar to TitleBar";
+            // Ensure TitleBar is visible first
+            if (m_titleBar) {
+                qDebug() << "TitleBar visible:" << m_titleBar->isVisible();
+                m_titleBar->setVisible(true);
+                qDebug() << "TitleBar visible after setVisible(true):" << m_titleBar->isVisible();
+            }
+            // Remove from contentLayout if it's there
+            if (contentLayout) {
+                qDebug() << "Removing menubar from contentLayout";
+                contentLayout->removeWidget(menuBar);
+                qDebug() << "ContentLayout count after remove:" << contentLayout->count();
+            }
+            qDebug() << "Setting menubar parent to MainWindow";
+            menuBar->setParent(this);
+            qDebug() << "Menubar parent:" << menuBar->parent();
+            if (m_titleBar) {
+                qDebug() << "Calling titleBar->setMenuBar(menuBar)";
+                m_titleBar->setMenuBar(menuBar);
+                qDebug() << "TitleBar menubar:" << m_titleBar->menuBar();
+                qDebug() << "TitleBar layout count:" << (m_titleBar->layout() ? m_titleBar->layout()->count() : 0);
+            }
+        } else {
+            qDebug() << "ERROR: No menubar found to restore!";
+        }
+    }
+
+    // Set window flags first (before moving widgets)
+    auto flags = windowFlags();
     if (useSystemFrame) {
         // Switch to system window frame
-        setWindowFlag(Qt::FramelessWindowHint, false);
+        flags &= ~Qt::FramelessWindowHint;
+        flags |= Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint;
+    } else {
+        // Switch to custom frameless window
+        flags |= Qt::FramelessWindowHint | Qt::WindowSystemMenuHint;
+        flags &= ~(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+    }
+    setWindowFlags(flags);
+    
+    // Update UI state after window flags are set
+    if (useSystemFrame) {
         if (m_titleBar) {
             // Hide logo and control buttons
             m_titleBar->setUseSystemFrame(true);
-            // Set menubar as the window's menu bar (it will appear in system title bar)
-            if (m_titleBar->menuBar()) {
-                setMenuBar(m_titleBar->menuBar());
-            }
-            // Hide the TitleBar widget itself (menubar is now in system frame)
+            // Hide the TitleBar widget itself
             m_titleBar->setVisible(false);
         }
-        for (auto *handle : std::as_const(m_resizeHandles)) {
-            if (handle)
-                handle->setVisible(false);
-        }
     } else {
-        // Switch to custom frameless window
-        setWindowFlag(Qt::FramelessWindowHint, true);
-        // Remove menubar from window (restore it to TitleBar)
-        if (m_titleBar && m_titleBar->menuBar()) {
-            setMenuBar(nullptr);
-            // Restore menubar parent to TitleBar
-            m_titleBar->menuBar()->setParent(m_titleBar);
-            // Restore menubar to TitleBar's layout
-            m_titleBar->restoreMenuBar();
-        }
         if (m_titleBar) {
             // Show TitleBar again
             m_titleBar->setVisible(true);
@@ -194,6 +264,18 @@ void MainWindow::setUseSystemFrame(bool useSystemFrame)
         }
         updateWindowUiState();
     }
+    
+    for (auto *handle : std::as_const(m_resizeHandles)) {
+        if (handle)
+            handle->setVisible(!useSystemFrame);
+    }
 
+    // Show window and force style update
     show(); // Required to apply window flag changes
+    
+    // Reapply stylesheet to ensure styles are correct after window flag change
+    if (auto *app = qobject_cast<Application *>(QApplication::instance())) {
+        // Trigger style update by reapplying current theme
+        app->loadTheme(app->currentTheme());
+    }
 }

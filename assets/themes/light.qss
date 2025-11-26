@@ -80,3 +80,102 @@ FlatButton:hover {
 FlatButton:pressed {
     background-color: #1E40AF;         /* primary-active */
 }
+
+/* Menu */
+QMenuBar {
+    background-color: transparent;
+    color: #1B1F27;
+    border: none;
+    font-size: 13px;
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+
+QMenuBar::item:selected {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+QMenuBar::item:pressed {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+QMenu {
+    background-color: #FFFFFF;
+    color: #1B1F27;
+    border: 1px solid #D9DDE7;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 4px 24px 4px 20px;
+    border-radius: 3px;
+    min-height: 18px;
+}
+
+QMenu::item:selected {
+    background-color: rgba(37, 99, 235, 0.1);  /* primary with opacity */
+    color: #2563EB;
+}
+
+QMenu::item:pressed {
+    background-color: rgba(37, 99, 235, 0.15);
+}
+
+QMenu::separator {
+    height: 1px;
+    background-color: #E2E6F0;
+    margin: 4px 8px;
+}
+
+/* Checkbox in menu */
+QMenu::indicator {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #9CA3AF;
+    border-radius: 3px;
+    background-color: #FFFFFF;
+    margin-left: 4px;
+}
+
+QMenu::indicator:hover {
+    border-color: #6B7280;
+}
+
+QMenu::indicator:checked {
+    background-color: #2563EB;
+    border-color: #2563EB;
+}
+
+QMenu::indicator:checked:hover {
+    background-color: #1D4ED8;
+    border-color: #1D4ED8;
+}
+
+/* Radio button in menu (exclusive indicator) */
+QMenu::indicator:exclusive {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #9CA3AF;
+    border-radius: 7px;
+    background-color: #FFFFFF;
+    margin-left: 4px;
+}
+
+QMenu::indicator:exclusive:hover {
+    border-color: #6B7280;
+}
+
+QMenu::indicator:exclusive:checked {
+    background-color: #2563EB;
+    border-color: #2563EB;
+}
+
+QMenu::indicator:exclusive:checked:hover {
+    background-color: #1D4ED8;
+    border-color: #1D4ED8;
+}

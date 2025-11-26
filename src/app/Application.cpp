@@ -2,6 +2,8 @@
 
 #include <QFile>
 #include <QTextStream>
+#include <QStyle>
+#include <QWidget>
 
 #include "ui/window/MainWindow.h"
 
@@ -23,15 +25,15 @@ int Application::run() {
 }
 
 void Application::loadTheme(const QString &themeName) {
-  if (m_currentTheme == themeName)
-    return;
-
+  // Always reload theme to ensure stylesheet is reapplied
+  // (even if themeName is the same, we need to force reapply)
   m_currentTheme = themeName;
 
-  // Clear existing stylesheet
-  QString combinedStylesheet;
+  // Clear existing stylesheet first to force reapply
+  setStyleSheet(QString());
 
   // Load base app stylesheet
+  QString combinedStylesheet;
   QFile appFile(QStringLiteral(":/styles/app.qss"));
   if (appFile.open(QFile::ReadOnly | QFile::Text)) {
     QTextStream appStream(&appFile);
@@ -51,6 +53,16 @@ void Application::loadTheme(const QString &themeName) {
 
   // Apply combined stylesheet
   setStyleSheet(combinedStylesheet);
+  
+  // Force style update on all top-level widgets
+  // This ensures stylesheet changes are properly applied
+  for (QWidget *widget : allWidgets()) {
+    if (widget && widget->isWindow()) {
+      widget->style()->unpolish(widget);
+      widget->style()->polish(widget);
+      widget->update();
+    }
+  }
 }
 
 void Application::onThemeChanged(const QString &themeName) {

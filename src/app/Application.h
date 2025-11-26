@@ -25,6 +25,12 @@ public:
    * @param themeName Theme name: "light" or "dark"
    */
   void loadTheme(const QString &themeName);
+  
+  /**
+   * @brief Gets the current theme name.
+   * @return Current theme name
+   */
+  QString currentTheme() const { return m_currentTheme; }
 
 public slots:
   void onThemeChanged(const QString &themeName);

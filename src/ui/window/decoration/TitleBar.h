@@ -23,7 +23,7 @@ public:
 
     void setMaximized(bool maximized);
     void setUseSystemFrame(bool useSystemFrame);
-    void restoreMenuBar();
+    void setMenuBar(QMenuBar *menuBar);
     void setTheme(const QString &themeName);
     QMenuBar *menuBar() const { return m_menuBar; }
 

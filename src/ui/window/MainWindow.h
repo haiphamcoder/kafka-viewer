@@ -31,5 +31,6 @@ private:
 
   TitleBar *m_titleBar = nullptr;
   QVector<WindowResizeHandle *> m_resizeHandles;
+  QWidget *m_contentContainer = nullptr;
   bool m_useSystemFrame = false;
 };

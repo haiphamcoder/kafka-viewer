@@ -2,6 +2,7 @@
 
 #include <QAction>
 #include <QActionGroup>
+#include <QDebug>
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -11,6 +12,7 @@
 #include <QMouseEvent>
 #include <QPixmap>
 #include <QSizePolicy>
+#include <QStyle>
 #include <QToolButton>
 
 namespace {
@@ -184,39 +186,109 @@ void TitleBar::setUseSystemFrame(bool useSystemFrame) {
     m_closeButton->setVisible(!useSystemFrame);
 }
 
-void TitleBar::restoreMenuBar() {
-  if (!m_menuBar)
+void TitleBar::setMenuBar(QMenuBar *bar) {
+  qDebug() << "TitleBar::setMenuBar called with" << bar;
+  
+  if (m_menuBar == bar) {
+    qDebug() << "Same menubar, returning early";
     return;
-
-  // Check if menubar is already in layout
+  }
+  
   auto *layout = qobject_cast<QHBoxLayout *>(this->layout());
-  if (!layout)
+  if (!layout) {
+    qDebug() << "No layout found!";
     return;
+  }
 
-  // Check if menubar is in the layout
+  // Debug: Print current layout state
+  qDebug() << "Current layout count:" << layout->count();
   for (int i = 0; i < layout->count(); ++i) {
     auto *item = layout->itemAt(i);
-    if (item && item->widget() == m_menuBar) {
-      // Already in layout, just make sure it's visible
-      m_menuBar->setVisible(true);
-      return;
+    if (item) {
+      if (auto *widget = item->widget()) {
+        qDebug() << "  Item" << i << ":" << widget->metaObject()->className() 
+                 << "objectName:" << widget->objectName();
+      } else if (item->spacerItem()) {
+        qDebug() << "  Item" << i << ": Spacer";
+      }
     }
   }
 
-  // Menubar is not in layout, add it back
-  // Find the position of logo and insert menubar right after it
-  int insertIndex = 1; // Default: after logo (index 0)
-  for (int i = 0; i < layout->count(); ++i) {
-    auto *item = layout->itemAt(i);
-    if (item && item->widget() == m_logoLabel) {
-      insertIndex = i + 1;
-      break;
+  // Remove existing menubar from layout if present
+  if (m_menuBar && layout) {
+    qDebug() << "Removing existing menubar" << m_menuBar;
+    for (int i = layout->count() - 1; i >= 0; --i) {
+      auto *item = layout->itemAt(i);
+      if (item && item->widget() == m_menuBar) {
+        qDebug() << "Found menubar at index" << i << ", removing";
+        layout->removeWidget(m_menuBar);
+        break;
+      }
+    }
+    if (m_menuBar != bar) {
+      m_menuBar->setParent(nullptr);
     }
   }
-
-  layout->insertWidget(insertIndex, m_menuBar, /*stretch=*/1);
-  layout->setAlignment(m_menuBar, Qt::AlignVCenter);
-  m_menuBar->setVisible(true);
+  
+  // Update menubar reference
+  m_menuBar = bar;
+  
+  // Add new menubar to layout if provided
+  if (m_menuBar && layout) {
+    qDebug() << "Adding new menubar" << m_menuBar;
+    m_menuBar->setParent(this);
+    m_menuBar->setObjectName(QStringLiteral("TitleBarMenu"));
+    m_menuBar->setNativeMenuBar(false);
+    m_menuBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_menuBar->installEventFilter(this);
+    m_menuBar->setVisible(true);
+    
+    // Find the position of logo and insert menubar right after it
+    // Ensure logo is in layout first
+    bool logoInLayout = false;
+    int logoIndex = -1;
+    for (int i = 0; i < layout->count(); ++i) {
+      auto *item = layout->itemAt(i);
+      if (item) {
+        if (item->widget() == m_logoLabel) {
+          logoInLayout = true;
+          logoIndex = i;
+          qDebug() << "Found logo at index" << i;
+          break;
+        }
+      }
+    }
+    
+    // If logo is not in layout, add it first
+    if (!logoInLayout && m_logoLabel) {
+      qDebug() << "Logo not in layout, adding it at index 0";
+      layout->insertWidget(0, m_logoLabel);
+      logoIndex = 0;
+    }
+    
+    // Insert menubar right after logo (or at index 0 if no logo)
+    int insertIndex = (logoIndex >= 0) ? logoIndex + 1 : 0;
+    qDebug() << "Inserting menubar at index" << insertIndex;
+    layout->insertWidget(insertIndex, m_menuBar, /*stretch=*/1);
+    layout->setAlignment(m_menuBar, Qt::AlignVCenter);
+    
+    // Debug: Print layout state after insertion
+    qDebug() << "Layout count after insertion:" << layout->count();
+    for (int i = 0; i < layout->count(); ++i) {
+      auto *item = layout->itemAt(i);
+      if (item) {
+        if (auto *widget = item->widget()) {
+          qDebug() << "  Item" << i << ":" << widget->metaObject()->className() 
+                   << "objectName:" << widget->objectName()
+                   << "visible:" << widget->isVisible();
+        } else if (item->spacerItem()) {
+          qDebug() << "  Item" << i << ": Spacer";
+        }
+      }
+    }
+  } else {
+    qDebug() << "No menubar to add or no layout";
+  }
 }
 
 void TitleBar::setTheme(const QString &themeName) {
