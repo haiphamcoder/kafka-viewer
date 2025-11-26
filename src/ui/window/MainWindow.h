@@ -6,6 +6,8 @@
 class QEvent;
 class QGridLayout;
 class QWidget;
+class QMenuBar;
+class QVBoxLayout;
 
 class TitleBar;
 class WindowResizeHandle;
@@ -28,6 +30,12 @@ private:
   void toggleMaximizeRestore();
   void restoreWindow();
   void setUseSystemFrame(bool useSystemFrame);
+  void moveMenuBarToContent();
+  void restoreMenuBarToTitleBar();
+  QMenuBar *takeMenuBarFromContentLayout();
+  QVBoxLayout *contentLayout() const;
+  void applyWindowFrameFlags(bool useSystemFrame);
+  void updateTitleBarVisibilityForFrameMode(bool useSystemFrame);
 
   TitleBar *m_titleBar = nullptr;
   QVector<WindowResizeHandle *> m_resizeHandles;

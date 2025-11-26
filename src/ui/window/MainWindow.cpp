@@ -159,123 +159,119 @@ void MainWindow::setUseSystemFrame(bool useSystemFrame)
 
     m_useSystemFrame = useSystemFrame;
 
-    // Move menu bar between title bar and content container based on frame mode
-    auto *contentLayout = qobject_cast<QVBoxLayout *>(m_contentContainer->layout());
-    QMenuBar *menuBar = nullptr;
-    
-    if (useSystemFrame) {
-        // System frame: get menubar from TitleBar before removing it
-        if (m_titleBar) {
-            menuBar = m_titleBar->menuBar();
-            if (menuBar) {
-                // Remove from TitleBar first
-                m_titleBar->setMenuBar(nullptr);
-                // Add to content layout between titleBar and content
-                if (contentLayout && m_contentContainer) {
-                    menuBar->setParent(m_contentContainer);
-                    int contentIndex = contentLayout->indexOf(m_titleBar);
-                    if (contentIndex >= 0) {
-                        contentLayout->insertWidget(contentIndex + 1, menuBar);
-                    } else {
-                        contentLayout->insertWidget(0, menuBar);
-                    }
-                }
-            }
-        }
-    } else {
-        // Custom frame: get menubar from contentLayout
-        if (contentLayout && m_contentContainer) {
-            // Find menubar in contentLayout
-            for (int i = 0; i < contentLayout->count(); ++i) {
-                auto *item = contentLayout->itemAt(i);
-                if (item) {
-                    if (auto *widget = item->widget()) {
-                        if (qobject_cast<QMenuBar *>(widget)) {
-                            menuBar = qobject_cast<QMenuBar *>(widget);
-                            qDebug() << "Found menubar in contentLayout at index" << i;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // If not found in contentLayout, try to get from TitleBar (fallback)
-        if (!menuBar && m_titleBar) {
-            menuBar = m_titleBar->menuBar();
-            qDebug() << "Menubar from TitleBar:" << menuBar;
-        }
-        
-        if (menuBar) {
-            qDebug() << "Switching to custom frame - restoring menubar to TitleBar";
-            // Ensure TitleBar is visible first
-            if (m_titleBar) {
-                qDebug() << "TitleBar visible:" << m_titleBar->isVisible();
-                m_titleBar->setVisible(true);
-                qDebug() << "TitleBar visible after setVisible(true):" << m_titleBar->isVisible();
-            }
-            // Remove from contentLayout if it's there
-            if (contentLayout) {
-                qDebug() << "Removing menubar from contentLayout";
-                contentLayout->removeWidget(menuBar);
-                qDebug() << "ContentLayout count after remove:" << contentLayout->count();
-            }
-            qDebug() << "Setting menubar parent to MainWindow";
-            menuBar->setParent(this);
-            qDebug() << "Menubar parent:" << menuBar->parent();
-            if (m_titleBar) {
-                qDebug() << "Calling titleBar->setMenuBar(menuBar)";
-                m_titleBar->setMenuBar(menuBar);
-                qDebug() << "TitleBar menubar:" << m_titleBar->menuBar();
-                qDebug() << "TitleBar layout count:" << (m_titleBar->layout() ? m_titleBar->layout()->count() : 0);
-            }
-        } else {
-            qDebug() << "ERROR: No menubar found to restore!";
-        }
-    }
+    // Moving the menu bar needs to happen before the title bar visibility
+    // changes so we do not briefly lose the menu during the transition.
+    if (useSystemFrame)
+        moveMenuBarToContent();
+    else
+        restoreMenuBarToTitleBar();
 
-    // Set window flags first (before moving widgets)
-    auto flags = windowFlags();
-    if (useSystemFrame) {
-        // Switch to system window frame
-        flags &= ~Qt::FramelessWindowHint;
-        flags |= Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint;
-    } else {
-        // Switch to custom frameless window
-        flags |= Qt::FramelessWindowHint | Qt::WindowSystemMenuHint;
-        flags &= ~(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
-    }
-    setWindowFlags(flags);
-    
-    // Update UI state after window flags are set
-    if (useSystemFrame) {
-        if (m_titleBar) {
-            // Hide logo and control buttons
-            m_titleBar->setUseSystemFrame(true);
-            // Hide the TitleBar widget itself
-            m_titleBar->setVisible(false);
-        }
-    } else {
-        if (m_titleBar) {
-            // Show TitleBar again
-            m_titleBar->setVisible(true);
-            // Show logo and control buttons again
-            m_titleBar->setUseSystemFrame(false);
-        }
-        updateWindowUiState();
-    }
-    
+    applyWindowFrameFlags(useSystemFrame);
+    updateTitleBarVisibilityForFrameMode(useSystemFrame);
+
     for (auto *handle : std::as_const(m_resizeHandles)) {
         if (handle)
             handle->setVisible(!useSystemFrame);
     }
 
-    // Show window and force style update
     show(); // Required to apply window flag changes
-    
-    // Reapply stylesheet to ensure styles are correct after window flag change
+
     if (auto *app = qobject_cast<Application *>(QApplication::instance())) {
-        // Trigger style update by reapplying current theme
         app->loadTheme(app->currentTheme());
     }
+}
+
+// When the window uses the system frame we no longer need a custom title bar,
+// so migrate the menu bar into the content area to keep it visible.
+void MainWindow::moveMenuBarToContent()
+{
+    if (!m_titleBar || !m_contentContainer)
+        return;
+
+    auto *menuBar = m_titleBar->menuBar();
+    auto *layout = contentLayout();
+    if (!menuBar || !layout)
+        return;
+
+    m_titleBar->setMenuBar(nullptr);
+
+    menuBar->setParent(m_contentContainer);
+    const int titleIndex = layout->indexOf(m_titleBar);
+    const int insertPosition = titleIndex >= 0 ? titleIndex + 1 : 0;
+    layout->insertWidget(insertPosition, menuBar);
+}
+
+// Restore the menu bar to the custom title bar when returning to the frameless
+// window mode.
+void MainWindow::restoreMenuBarToTitleBar()
+{
+    if (!m_titleBar)
+        return;
+
+    QMenuBar *menuBar = takeMenuBarFromContentLayout();
+    if (!menuBar)
+        menuBar = m_titleBar->menuBar();
+
+    if (!menuBar)
+        return;
+
+    menuBar->setParent(m_titleBar);
+    m_titleBar->setMenuBar(menuBar);
+}
+
+// Finds the menu bar widget inside the content layout, detaches it from the
+// layout, and returns it to the caller for reparenting.
+QMenuBar *MainWindow::takeMenuBarFromContentLayout()
+{
+    auto *layout = contentLayout();
+    if (!layout)
+        return nullptr;
+
+    for (int i = 0; i < layout->count(); ++i) {
+        auto *item = layout->itemAt(i);
+        if (!item)
+            continue;
+        if (auto *widget = item->widget()) {
+            if (auto *menuBar = qobject_cast<QMenuBar *>(widget)) {
+                layout->removeWidget(menuBar);
+                menuBar->setParent(nullptr);
+                return menuBar;
+            }
+        }
+    }
+    return nullptr;
+}
+
+// Convenience accessor that guarantees we only work with QVBoxLayout when
+// manipulating the stacked widgets in the window content container.
+QVBoxLayout *MainWindow::contentLayout() const
+{
+    return qobject_cast<QVBoxLayout *>(m_contentContainer ? m_contentContainer->layout() : nullptr);
+}
+
+// Applies the correct set of Qt window flags for the selected frame mode.
+void MainWindow::applyWindowFrameFlags(bool useSystemFrame)
+{
+    auto flags = windowFlags();
+    if (useSystemFrame) {
+        flags &= ~Qt::FramelessWindowHint;
+        flags |= Qt::WindowSystemMenuHint | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint;
+    } else {
+        flags |= Qt::FramelessWindowHint | Qt::WindowSystemMenuHint;
+        flags &= ~(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+    }
+    setWindowFlags(flags);
+}
+
+// Keeps the title bar visibility and control state in sync with the active
+// frame mode so the user never sees duplicate chrome.
+void MainWindow::updateTitleBarVisibilityForFrameMode(bool useSystemFrame)
+{
+    if (!m_titleBar)
+        return;
+
+    m_titleBar->setUseSystemFrame(useSystemFrame);
+    m_titleBar->setVisible(!useSystemFrame);
+    if (!useSystemFrame)
+        updateWindowUiState();
 }
